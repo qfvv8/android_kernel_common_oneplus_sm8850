@@ -132,7 +132,8 @@ enum __kvm_host_smccc_func {
 	__KVM_HOST_SMCCC_FUNC___pkvm_pviommu_attach,
 	__KVM_HOST_SMCCC_FUNC___pkvm_pviommu_add_vsid,
 	__KVM_HOST_SMCCC_FUNC___pkvm_host_get_ffa_version,
-
+        __KVM_HOST_SMCCC_FUNC___custom_el2_phys_read,
+	__KVM_HOST_SMCCC_FUNC___custom_el2_phys_write,
 	/*
 	 * Start of the dynamically registered hypercalls. Start a bit
 	 * further, just in case some modules...
