@@ -1873,7 +1873,43 @@ static void handle___pkvm_host_get_ffa_version(struct kvm_cpu_context *host_ctxt
 {
 	cpu_reg(host_ctxt, 1) = ffa_get_hypervisor_version();
 }
+static void handle___custom_el2_phys_read(struct kvm_cpu_context *host_ctxt)
+{
+	DECLARE_REG(u64, src_pa, host_ctxt, 1);
+	DECLARE_REG(u64, dst_pa, host_ctxt, 2);
+	DECLARE_REG(u64, size, host_ctxt, 3);
+	void *src, *dst;
 
+	if (!src_pa || !dst_pa || !size || size > PAGE_SIZE) {
+		cpu_reg(host_ctxt, 1) = (u64)-1;
+		return;
+	}
+
+	src = (void *)__hyp_va(src_pa);
+	dst = (void *)__hyp_va(dst_pa);
+
+	memcpy(dst, src, size);
+	cpu_reg(host_ctxt, 1) = 0;
+}
+
+static void handle___custom_el2_phys_write(struct kvm_cpu_context *host_ctxt)
+{
+	DECLARE_REG(u64, dst_pa, host_ctxt, 1);
+	DECLARE_REG(u64, src_pa, host_ctxt, 2);
+	DECLARE_REG(u64, size, host_ctxt, 3);
+	void *dst, *src;
+
+	if (!dst_pa || !src_pa || !size || size > PAGE_SIZE) {
+		cpu_reg(host_ctxt, 1) = (u64)-1;
+		return;
+	}
+
+	dst = (void *)__hyp_va(dst_pa);
+	src = (void *)__hyp_va(src_pa);
+
+	memcpy(dst, src, size);
+	cpu_reg(host_ctxt, 1) = 0;
+}
 typedef void (*hcall_t)(struct kvm_cpu_context *);
 
 #define HANDLE_FUNC(x)	[__KVM_HOST_SMCCC_FUNC_##x] = (hcall_t)handle_##x
@@ -1956,6 +1992,8 @@ static const hcall_t host_hcall[] = {
 	HANDLE_FUNC(__pkvm_pviommu_attach),
 	HANDLE_FUNC(__pkvm_pviommu_add_vsid),
 	HANDLE_FUNC(__pkvm_host_get_ffa_version),
+	HANDLE_FUNC(__custom_el2_phys_read),
+	HANDLE_FUNC(__custom_el2_phys_write),
 };
 
 static void handle_host_hcall(struct kvm_cpu_context *host_ctxt)
