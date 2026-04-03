@@ -1876,38 +1876,67 @@ static void handle___pkvm_host_get_ffa_version(struct kvm_cpu_context *host_ctxt
 static void handle___custom_el2_phys_read(struct kvm_cpu_context *host_ctxt)
 {
 	DECLARE_REG(u64, src_pa, host_ctxt, 1);
-	DECLARE_REG(u64, dst_pa, host_ctxt, 2);
+	DECLARE_REG(u64, kbuf_va, host_ctxt, 2);
 	DECLARE_REG(u64, size, host_ctxt, 3);
 	void *src, *dst;
+	u64 offset;
 
-	if (!src_pa || !dst_pa || !size || size > PAGE_SIZE) {
+	if (!src_pa || !kbuf_va || !size || size > PAGE_SIZE) {
 		cpu_reg(host_ctxt, 1) = (u64)-1;
 		return;
 	}
 
-	src = (void *)__hyp_va(src_pa);
-	dst = (void *)__hyp_va(dst_pa);
+	offset = src_pa & (PAGE_SIZE - 1);
+	if (offset + size > PAGE_SIZE) {
+		cpu_reg(host_ctxt, 1) = (u64)-1;
+		return;
+	}
 
+	src = hyp_fixmap_map(src_pa & PAGE_MASK);
+	if (!src) {
+		cpu_reg(host_ctxt, 1) = (u64)-1;
+		return;
+	}
+	src += offset;
+
+	dst = (void *)kern_hyp_va(kbuf_va);
 	memcpy(dst, src, size);
+	hyp_fixmap_unmap();
+
 	cpu_reg(host_ctxt, 1) = 0;
 }
 
 static void handle___custom_el2_phys_write(struct kvm_cpu_context *host_ctxt)
 {
 	DECLARE_REG(u64, dst_pa, host_ctxt, 1);
-	DECLARE_REG(u64, src_pa, host_ctxt, 2);
+	DECLARE_REG(u64, kbuf_va, host_ctxt, 2);
 	DECLARE_REG(u64, size, host_ctxt, 3);
 	void *dst, *src;
+	u64 offset;
 
-	if (!dst_pa || !src_pa || !size || size > PAGE_SIZE) {
+	if (!dst_pa || !kbuf_va || !size || size > PAGE_SIZE) {
 		cpu_reg(host_ctxt, 1) = (u64)-1;
 		return;
 	}
 
-	dst = (void *)__hyp_va(dst_pa);
-	src = (void *)__hyp_va(src_pa);
+	offset = dst_pa & (PAGE_SIZE - 1);
+	if (offset + size > PAGE_SIZE) {
+		cpu_reg(host_ctxt, 1) = (u64)-1;
+		return;
+	}
+
+	src = (void *)kern_hyp_va(kbuf_va);
+
+	dst = hyp_fixmap_map(dst_pa & PAGE_MASK);
+	if (!dst) {
+		cpu_reg(host_ctxt, 1) = (u64)-1;
+		return;
+	}
+	dst += offset;
 
 	memcpy(dst, src, size);
+	hyp_fixmap_unmap();
+
 	cpu_reg(host_ctxt, 1) = 0;
 }
 typedef void (*hcall_t)(struct kvm_cpu_context *);
