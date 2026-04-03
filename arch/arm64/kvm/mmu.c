@@ -594,7 +594,7 @@ int kvm_share_hyp(void *from, void *to)
 
 	return 0;
 }
-
+EXPORT_SYMBOL(kvm_share_hyp);
 void kvm_unshare_hyp(void *from, void *to)
 {
 	phys_addr_t start, end, cur;
@@ -610,7 +610,7 @@ void kvm_unshare_hyp(void *from, void *to)
 		WARN_ON(unshare_pfn_hyp(pfn));
 	}
 }
-
+EXPORT_SYMBOL(kvm_unshare_hyp);
 /**
  * create_hyp_mappings - duplicate a kernel virtual address range in Hyp mode
  * @from:	The virtual kernel start address of the range
